@@ -1,0 +1,12 @@
+GET https://demo.testfire.net/api/account
+accept: application/json
+
+
+POST https://demo.testfire.net/api/account/1/transactions
+Content-Type: application/json
+accept: application/json
+
+{
+ "startDate": "2012-03-12",
+ "endDate": "2012-03-17"
+}
