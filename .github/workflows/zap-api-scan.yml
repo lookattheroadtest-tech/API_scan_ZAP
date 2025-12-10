@@ -1,10 +1,9 @@
-name: ZAP API Scan
-
+name: ZAP Custom API Scan
 on:
   workflow_dispatch:
 
 jobs:
-  zap-api-scan:
+  zap-custom-api:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,19 +13,32 @@ jobs:
     - name: Fix permissions
       run: chmod -R 777 .
 
-    - name: Run ZAP API Scan
+    # Merge auth header into request list
+    - name: Build merged request file
+      run: |
+        echo "" > merged.txt
+        while IFS= read -r line; do
+          if echo "$line" | grep -qE "^GET|^POST"; then
+            echo "$line" >> merged.txt
+            cat auth-header.txt >> merged.txt
+          else
+            echo "$line" >> merged.txt
+          fi
+        done < api-requests.txt
+
+    # Run full ZAP scan using custom URLs only
+    - name: Run ZAP FULL SCAN (NO OpenAPI)
       run: |
         docker run --rm \
           -v "$(pwd):/zap/wrk" \
           ghcr.io/zaproxy/zaproxy:stable \
-          zap-api-scan.py \
-          -t https://demo.testfire.net/swagger/properties.json \
-          -f openapi \
-          -z "auth.header_file=/zap/wrk/auth-header.txt" \
-          -r zap-report.html \
-          -x zap-report.xml \
-          -d \
-          -I
+          zap-full-scan.py \
+            -t https://dummy.com \
+            -z "script.console.commands=importUrls('/zap/wrk/merged.txt')" \
+            -r zap-report.html \
+            -x zap-report.xml \
+            -I \
+            -d
 
     - name: Upload HTML Report
       uses: actions/upload-artifact@v4
