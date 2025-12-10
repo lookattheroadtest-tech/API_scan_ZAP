@@ -1,0 +1,41 @@
+name: ZAP API Scan
+
+on:
+  workflow_dispatch:
+
+jobs:
+  zap-api-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Fix permissions
+      run: chmod -R 777 .
+
+    - name: Run ZAP API Scan
+      run: |
+        docker run --rm \
+          -v "$(pwd):/zap/wrk" \
+          ghcr.io/zaproxy/zaproxy:stable \
+          zap-api-scan.py \
+          -t https://demo.testfire.net/swagger/properties.json \
+          -f openapi \
+          -z "auth.header_file=/zap/wrk/auth-header.txt" \
+          -r zap-report.html \
+          -x zap-report.xml \
+          -d \
+          -I
+
+    - name: Upload HTML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: zap-html-report
+        path: zap-report.html
+
+    - name: Upload XML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: zap-xml-report
+        path: zap-report.xml
